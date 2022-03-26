@@ -37,6 +37,7 @@ include __DIR__.'/../app/comment.php';
 include __DIR__.'/../app/helpers/friendhelper.php';
 include __DIR__.'/../app/helpers/likehelper.php';
 include __DIR__.'/../app/helpers/commenthelper.php';
+include __DIR__.'/../app/helpers/commentLikeHelper.php';
 
 // after everything is included app is run from here
 $app->run();

@@ -174,8 +174,22 @@
 		include __DIR__ . '/../app/helpers/dbhelper.php';
 
 		$postId = $request->getQueryParam('postId');
+		$uid = $request->getQueryParam('uid');
 		$response=array();
 		$comment = retriveTopLevelComment($postId);
+
+
+		foreach ($comment as $key => $value) {
+		
+			if(checkCommentLike($uid, $comment[$key]['comment']['cid'])){
+				 $comment[$key]['comment']["isLiked"]=true;
+			 }else{
+				 $comment[$key]['comment']["isLiked"]=false;
+			}
+	
+		}
+
+
 		$response['result']=$comment;
 
 		echo json_encode($response);	
@@ -196,13 +210,144 @@
 
 		$postId = $request->getQueryParam('postId');
 		$commentId = $request->getQueryParam('commentId');
+		$uid = $request->getQueryParam('uid');
 
 		$response=array();
 		$comment = retriveLowLevelComment($postId,$commentId);
+
+
+		foreach ($comment as $key => $value) {
+		
+			if(checkCommentLike($uid, $value['cid'])){
+				$comment[$key]["isLiked"]=true;
+			 }else{
+				$comment[$key]["isLiked"]=false;
+			}
+	
+		}
+
+
 		$response=$comment;
 
 		echo json_encode($response);
 					
+	});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	//Api for like and unlike feature
+	$app->post('/app/commentlikeunlike',function($request){
+
+
+		include __DIR__ .'/../app/helpers/dbhelper.php';
+		
+		$userId = $request->getParsedBody()['userId'];
+		$contentId =  $request->getParsedBody()['cid'];
+		$contentOwnerId =  $request->getParsedBody()['contentOwnerId'];
+		$operationType = $request->getParsedBody()['operationType'];
+
+		
+
+		if($operationType==1){
+
+			// code for like 
+
+			$stmt = $pdo->prepare("UPDATE `comments` SET `likeCount` = `likeCount`+1  WHERE `cid` = :commentId");
+			$stmt->bindParam(":commentId", $contentId, PDO::PARAM_INT);
+			$stmt->execute();
+			$count = $stmt->rowCount();
+
+			if($count =='1'){
+
+				$stmt = $pdo->prepare("INSERT INTO `commentLikes` (`likedBy`, `commentId`) VALUES (:likedBy, :commentId); ");
+				$stmt->bindParam(':likedBy', $userId, PDO::PARAM_STR);
+				$stmt->bindParam(':commentId', $contentId, PDO::PARAM_STR);
+				$stmt= $stmt->execute();
+						
+		
+				if($stmt){
+											
+					// $stmt = $pdo->prepare("INSERT INTO `notifications` (`notificationTo`, `notificationFrom`, `type`,`notificationTime`,`postId`) VALUES (:notificationTo, :notificationFrom,:type, current_timestamp,:postId); ");
+						
+					// // type  = 32  means notification is  for comment like
+					// $type = 1;
+					// $stmt->bindParam(':notificationTo', $contentOwnerId, PDO::PARAM_STR);
+					// $stmt->bindParam(':notificationFrom', $userId, PDO::PARAM_STR);
+					// $stmt->bindParam(':postId', $contentId, PDO::PARAM_STR);
+					// $stmt->bindParam(':type', $type, PDO::PARAM_INT);
+					// $stmt= $stmt->execute();
+					
+
+					$likeCount = getCommentLikeCount($contentId);
+					//var_dump($likeCount);
+					if($likeCount->likeCount ==="0"){
+						echo 0;	
+					}else{
+							
+						echo (int) $likeCount->likeCount;	
+					}
+
+				}else{
+					
+					echo 0;
+				}
+
+			}else{
+				echo 0;
+			}
+			
+		
+		}else{
+			// code for unlike
+	
+			$stmt = $pdo->prepare("UPDATE `comments` SET `likeCount` = `likeCount`-1  WHERE `cid` = :commentId");
+			$stmt->bindParam(":commentId", $contentId, PDO::PARAM_INT);
+			$stmt->execute();
+			$count = $stmt->rowCount();
+
+			
+			$stmt = $pdo->prepare("DELETE FROM  `commentLikes` WHERE `likedBy`=:likedBy AND `commentId` = :commentId");
+			$stmt->bindParam(':likedBy', $userId, PDO::PARAM_STR);
+			$stmt->bindParam(':commentId', $contentId, PDO::PARAM_STR);
+			$stmt= $stmt->execute();
+
+					
+			if($stmt){
+
+				// $stmt = $pdo->prepare("DELETE FROM  `notifications` WHERE `notificationTo`=:notificationTo AND `notificationFrom` =:notificationFrom ");
+				
+				// $stmt->bindParam(':notificationTo', $contentOwnerId, PDO::PARAM_STR);
+				// $stmt->bindParam(':notificationFrom', $userId, PDO::PARAM_STR);
+				// $stmt= $stmt->execute();
+
+
+				$likeCount = getCommentLikeCount($contentId);
+				
+				if( ( (int) $likeCount->likeCount ) != '0' ){
+						echo $likeCount->likeCount;
+				}else{
+						echo 1;
+				}
+			
+			}else{
+				echo "null";
+			}
+					
+		}
+
+
 	});
 
 
