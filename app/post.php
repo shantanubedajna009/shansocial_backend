@@ -234,4 +234,157 @@ $app->get("/app/testurl", function($request){
 
 });
 
+
+
+
+
+
+
+
+//Api for personalized timeline
+$app->get('/app/deletepost',function($request){
+
+	include __DIR__ . '/../app/helpers/dbhelper.php';
+
+
+  
+	$uid = $request->getQueryParam('uid');
+	$postId = $request->getQueryParam('postId');
+
+	$stmt = $pdo->prepare("SELECT * FROM `posts` WHERE `postUserId` = :userID AND `postId` = :postId");
+
+	$stmt->bindParam(':userID', $uid, PDO::PARAM_STR);		 
+	$stmt->bindParam(':postId', $postId, PDO::PARAM_STR);	
+	$stmt->execute();
+
+
+	if ($stmt && $stmt->rowCount() > 0) {
+
+
+
+		$stmt = $pdo->prepare("DELETE FROM `likes` WHERE `postId` = :postId");
+
+		//$stmt->bindParam(':uid', $uid, PDO::PARAM_STR);		 
+		$stmt->bindParam(':postId', $postId, PDO::PARAM_STR);	
+		$stmt->execute();
+
+
+		$stmt = $pdo->prepare("SELECT `cid` FROM `comments` WHERE `superParentId` = 0 AND `parentId` = :postId");
+
+		//$stmt->bindParam(':uid', $uid, PDO::PARAM_STR);		 
+		$stmt->bindParam(':postId', $postId, PDO::PARAM_STR);	
+		$stmt->execute();
+
+		/// delete comment likes here with returned cids
+		/////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+		$comments= $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        foreach ($comments as $key => $comment) {
+
+			$cid = $comment['cid'];
+
+			$stmt = $pdo->prepare("DELETE FROM `commentLikes` WHERE `commentId` = :commentId");
+			$stmt->bindParam(':commentId', $cid, PDO::PARAM_STR);	
+			$stmt->execute();
+
+        }
+
+
+
+		///////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+		// delete the comment itself
+		$stmt = $pdo->prepare("DELETE FROM `comments` WHERE `superParentId` = 0 AND `parentId` = :postId");
+
+		//$stmt->bindParam(':uid', $uid, PDO::PARAM_STR);		 
+		$stmt->bindParam(':postId', $postId, PDO::PARAM_STR);	
+		$stmt->execute();
+
+
+
+
+
+
+
+
+		
+
+		$stmt = $pdo->prepare("SELECT `cid` FROM `comments` WHERE `superParentId` = :postId");
+
+		//$stmt->bindParam(':uid', $uid, PDO::PARAM_STR);		 
+		$stmt->bindParam(':postId', $postId, PDO::PARAM_STR);	
+		$stmt->execute();
+
+		/// delete comment likes here with returned cids
+		/////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+		$comments= $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+		foreach ($comments as $key => $comment) {
+
+			$cid = $comment['cid'];
+
+			$stmt = $pdo->prepare("DELETE FROM `commentLikes` WHERE `commentId` = :commentId");
+			$stmt->bindParam(':commentId', $cid, PDO::PARAM_STR);	
+			$stmt->execute();
+
+		}
+
+
+
+		///////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+		// delete the comment itself
+		$stmt = $pdo->prepare("DELETE FROM `comments` WHERE `superParentId` = :postId");
+
+		//$stmt->bindParam(':uid', $uid, PDO::PARAM_STR);		 
+		$stmt->bindParam(':postId', $postId, PDO::PARAM_STR);	
+		$stmt->execute();
+
+
+
+
+
+
+
+
+
+		// delete the post at last
+		$stmt = $pdo->prepare("DELETE FROM `posts` WHERE `postId` = :postId");
+
+		//$stmt->bindParam(':uid', $uid, PDO::PARAM_STR);		 
+		$stmt->bindParam(':postId', $postId, PDO::PARAM_STR);	
+		$stmt->execute();
+
+
+
+
+		
+
+		echo "0";	
+
+
+
+
+		
+	} else {
+		 echo "1";
+	}
+  
+	
+	  
+});
+
+
 ?>
