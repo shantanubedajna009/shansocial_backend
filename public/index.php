@@ -31,6 +31,7 @@ include __DIR__ .'/../app/user.php';
 include  __DIR__.'/../app/post.php';
 include __DIR__.'/../app/friends.php';
 include __DIR__.'/../app/comment.php';
+include __DIR__.'/../app/messages.php';
 
 
 // helper methods

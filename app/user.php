@@ -321,6 +321,23 @@ $app->get('/app/search',function($request){
 });
 
 
+// Api for search
+$app->get('/app/listfriends',function($request){
+
+	include __DIR__ .'/../app/helpers/dbhelper.php';
+
+
+	$stmt = $pdo->prepare("SELECT * from `users`;");
+
+
+	$stmt->execute();
+	$row = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+	echo json_encode($row);
+
+});
+
+
 
 // Api for laoding Friends and Requests
 $app->get('/app/loadfriends',function($request){
@@ -362,5 +379,64 @@ $app->get('/app/loadfriends',function($request){
 });
 
 
+
+$app->get('/app/getnotification',function($request){
+
+	include __DIR__ .'/../app/helpers/dbhelper.php';
+	 $userId = $request->getQueryParam('uid');
+
+	$stmt = $pdo->prepare('
+		
+				SELECT notifications.*,users.name,users.profileUrl,posts.post FROM `notifications`
+				LEFT join users
+				ON
+				notifications.notificationFrom = users.uid
+				LEFT join posts
+				ON
+				notifications.postId = posts.postId 
+				WHERE `notificationTo` = :userId 
+				ORDER BY
+				notifications.notificationTime
+				DESC
+
+				');
+
+
+	 $stmt->bindParam(':userId', $userId, PDO::PARAM_STR);
+	$stmt->execute();		
+	$row = $stmt->fetchAll(PDO::FETCH_ASSOC);
+	
+	echo json_encode($row);
+});
+
+$app->get('/app/details',function($request){
+	include __DIR__ .'/../app/helpers/dbhelper.php';
+
+
+	$postId = $request->getQueryParam('postId');
+	$uid = $request->getQueryParam('uid');
+
+	 $stmt = $pdo->prepare("
+							 SELECT posts.*, users.name, users.profileUrl,users.userToken
+							  FROM `posts` 
+							  LEFT join users
+							  ON
+							 posts.postUserId = users.uid
+							  WHERE `postId` = :postId
+
+							  ");
+	$stmt->bindParam(':postId', $postId, PDO::PARAM_INT);		 
+	   $stmt->execute();
+
+	$result =$stmt->fetch(PDO::FETCH_OBJ);	
+
+	if(checkLike($uid,$postId)){
+			 $result->isLiked=true;
+		 }else{
+			 $result->isLiked=false;
+		}
+	echo json_encode($result);
+	
+});
 
 ?>
